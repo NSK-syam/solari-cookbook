@@ -1,0 +1,12 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "fastapi",
+  "devCommand": "npm --prefix frontend run dev -- --host 0.0.0.0",
+  "buildCommand": "npm run build",
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 300,
+      "includeFiles": "{backend/src/**,backend/migrations/**,fixtures/**,frontend/dist/**}"
+    }
+  }
+}

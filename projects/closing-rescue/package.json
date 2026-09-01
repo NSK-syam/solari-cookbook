@@ -1,0 +1,11 @@
+{
+  "name": "closing-rescue-vercel",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix frontend ci && npm --prefix frontend run build"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

@@ -1,0 +1,62 @@
+name: Closing Rescue
+
+on:
+  push:
+    paths:
+      - "projects/closing-rescue/**"
+      - ".github/workflows/closing-rescue.yml"
+  pull_request:
+    paths:
+      - "projects/closing-rescue/**"
+      - ".github/workflows/closing-rescue.yml"
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: projects/closing-rescue
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: projects/closing-rescue/frontend/package-lock.json
+      - run: cd backend && uv sync --all-groups --locked
+      - run: cd frontend && npm ci
+      - run: make lint test build secret-scan smoke-deploy
+      - run: cd backend && uv run --with pip-audit pip-audit
+      - run: cd frontend && npm audit --audit-level=high
+
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: projects/closing-rescue/frontend/package-lock.json
+      - run: cd backend && uv sync --all-groups --locked
+      - run: cd frontend && npm ci
+      - run: cd frontend && npx playwright install --with-deps chromium
+      - run: make test-e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: closing-rescue-playwright-report
+          path: projects/closing-rescue/frontend/playwright-report
+          retention-days: 7

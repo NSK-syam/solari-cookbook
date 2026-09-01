@@ -363,6 +363,24 @@ def test_v1_health_and_case_validation_remain_compatible(client: TestClient) -> 
     assert client.post("/api/v1/cases", json={"address": "short"}).status_code == 422
 
 
+def test_readiness_reports_database_failure_without_leaking_details(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    async def unavailable() -> None:
+        raise sqlite3.OperationalError("private database path")
+
+    monkeypatch.setattr(api.service.repository, "ping", unavailable)
+    response = client.get("/api/v1/ready")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "status": "unavailable",
+        "mode": "fixture",
+        "database": "unavailable",
+    }
+    assert "private database path" not in response.text
+
+
 def test_privileged_recovery_operations_are_not_exposed(client: TestClient) -> None:
     created = _create(client).json()
     base = f"/api/v2/closing-rescue/{created['portfolio_id']}"

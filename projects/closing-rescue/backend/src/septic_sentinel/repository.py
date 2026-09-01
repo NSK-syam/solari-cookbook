@@ -108,6 +108,13 @@ class SQLiteRepository:
                     await db.rollback()
                     raise
 
+    async def ping(self) -> None:
+        """Verify that the configured database accepts a read query."""
+        async with self._connect() as db:
+            row = await (await db.execute("SELECT 1")).fetchone()
+        if row is None or row[0] != 1:
+            raise RepositoryError("database readiness probe returned an invalid result")
+
     async def create_portfolio(
         self, snapshot: PortfolioSnapshot
     ) -> tuple[PortfolioSnapshot, bool]:

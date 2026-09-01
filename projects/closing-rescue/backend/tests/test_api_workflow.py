@@ -264,6 +264,11 @@ def test_api_rejects_invalid_input_and_returns_not_found_contract(
 
     assert health.status_code == 200
     assert health.json() == {"status": "ok", "mode": "fixture"}
+    assert client.get("/api/v1/ready").json() == {
+        "status": "ready",
+        "mode": "fixture",
+        "database": "ok",
+    }
     assert invalid.status_code == 422
     assert missing_case.status_code == 404
     assert missing_case.json() == {"detail": "Case not found"}

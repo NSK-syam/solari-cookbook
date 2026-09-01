@@ -271,6 +271,17 @@ async def health() -> dict[str, str]:
     return {"status": "ok", "mode": settings.mode}
 
 
+@app.get("/api/v1/ready")
+async def readiness(response: Response) -> dict[str, str]:
+    try:
+        await service.repository.ping()
+    except Exception:
+        logger.exception("readiness.failed")
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+        return {"status": "unavailable", "mode": settings.mode, "database": "unavailable"}
+    return {"status": "ready", "mode": settings.mode, "database": "ok"}
+
+
 @app.post(
     "/api/v2/closing-rescue/demo",
     response_model=ClosingRescueView,
