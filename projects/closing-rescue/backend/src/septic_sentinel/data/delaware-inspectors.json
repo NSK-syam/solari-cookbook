@@ -1,0 +1,50 @@
+{
+  "fixture_name": "synthetic-delaware-inspector-options",
+  "truth_class": "synthetic",
+  "options": [
+    {
+      "id": "synthetic-de-inspector-001",
+      "vendor_name": "First State Environmental",
+      "appointment_at": "2026-08-06T12:00:00Z",
+      "price_cents": 48000,
+      "service_type": "Synthetic Delaware septic inspection",
+      "approved": true,
+      "qualified": true,
+      "available_as_of": "2026-08-05T18:00:00Z",
+      "truth_class": "synthetic"
+    },
+    {
+      "id": "synthetic-de-inspector-002",
+      "vendor_name": "Synthetic Brandywine Site Services",
+      "appointment_at": "2026-08-07T13:00:00Z",
+      "price_cents": 45000,
+      "service_type": "Synthetic Delaware septic inspection",
+      "approved": false,
+      "qualified": true,
+      "available_as_of": "2026-08-05T17:00:00Z",
+      "truth_class": "synthetic"
+    },
+    {
+      "id": "synthetic-de-inspector-003",
+      "vendor_name": "Synthetic Sussex Soil Review",
+      "appointment_at": "2026-08-08T14:00:00Z",
+      "price_cents": 42000,
+      "service_type": "Synthetic Delaware septic inspection",
+      "approved": true,
+      "qualified": false,
+      "available_as_of": "2026-08-05T16:00:00Z",
+      "truth_class": "synthetic"
+    },
+    {
+      "id": "synthetic-de-inspector-004",
+      "vendor_name": "Synthetic Delmarva Inspection Lab",
+      "appointment_at": "2026-08-12T12:00:00Z",
+      "price_cents": 40000,
+      "service_type": "Synthetic Delaware septic inspection",
+      "approved": true,
+      "qualified": true,
+      "available_as_of": "2026-08-05T15:00:00Z",
+      "truth_class": "synthetic"
+    }
+  ]
+}

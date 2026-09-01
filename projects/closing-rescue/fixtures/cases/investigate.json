@@ -1,0 +1,40 @@
+{
+  "scenario": "investigate",
+  "address": "247 Cedar Lane, Harrington, DE 19952",
+  "location": {
+    "lat": 38.9237,
+    "lng": -75.5777,
+    "parcel_id": "DEMO-INVESTIGATE-002",
+    "payload": {
+      "disposition": "resolved",
+      "resolved_address": "247 Cedar Lane, Harrington, DE 19952",
+      "lat": 38.9237,
+      "lng": -75.5777,
+      "confidence": 0.96,
+      "parcel": { "apn": "DEMO-INVESTIGATE-002", "match_type": "fixture" }
+    }
+  },
+  "terrain": {
+    "soil_drainage_class": "moderately well drained",
+    "slope_pct": 5.8,
+    "depth_to_bedrock_cm": 160
+  },
+  "flood_risk": {
+    "within_floodplain": false,
+    "fema_flood_zone": "X"
+  },
+  "permit": {
+    "status": "record_not_found",
+    "parcel_id": "DEMO-INVESTIGATE-002",
+    "query_completed": true,
+    "candidates": []
+  },
+  "precipitation": {
+    "station_id": "KESN",
+    "lookback_hours": 72,
+    "precipitation_mm": 8.4,
+    "measured_observations": 20,
+    "interpretation": "urgency_modifier_only"
+  },
+  "expected_disposition": "investigate"
+}

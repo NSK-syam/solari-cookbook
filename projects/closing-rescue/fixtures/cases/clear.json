@@ -1,0 +1,48 @@
+{
+  "scenario": "clear",
+  "address": "18 Meadow Run, Dover, DE 19901",
+  "location": {
+    "lat": 39.1573,
+    "lng": -75.5198,
+    "parcel_id": "DEMO-CLEAR-001",
+    "payload": {
+      "disposition": "resolved",
+      "resolved_address": "18 Meadow Run, Dover, DE 19901",
+      "lat": 39.1573,
+      "lng": -75.5198,
+      "confidence": 0.98,
+      "parcel": { "apn": "DEMO-CLEAR-001", "match_type": "fixture" }
+    }
+  },
+  "terrain": {
+    "soil_drainage_class": "well drained",
+    "slope_pct": 3.2,
+    "depth_to_bedrock_cm": 190
+  },
+  "flood_risk": {
+    "within_floodplain": false,
+    "fema_flood_zone": "X"
+  },
+  "permit": {
+    "status": "success",
+    "parcel_id": "DEMO-CLEAR-001",
+    "candidate_count": 1,
+    "permits": [
+      {
+        "permitnumber": "DEMO-22-0142",
+        "taxparcelnumbers": "DEMO-CLEAR-001",
+        "appreceiveddate": "2022-04-18T00:00:00.000",
+        "permitstatus": "Completed",
+        "septicsystemtype": "Gravity"
+      }
+    ]
+  },
+  "precipitation": {
+    "station_id": "KDOV",
+    "lookback_hours": 72,
+    "precipitation_mm": 3.1,
+    "measured_observations": 18,
+    "interpretation": "urgency_modifier_only"
+  },
+  "expected_disposition": "clear"
+}

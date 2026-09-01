@@ -7,6 +7,12 @@ Every example in this repo is a complete program you can run in under a minute.
 They are deliberately small: one idea each, no framework, no scaffolding to read
 past. Copy one into your project and change the parts you care about.
 
+## Projects
+
+| Project | Stack | What it shows |
+| --- | --- | --- |
+| [Closing Rescue](projects/closing-rescue) | FastAPI + React + SQLite | A 47-loan, approval-gated product using recorded browsers, isolated sandbox calculations, and a GUI desktop receipt |
+
 ## Examples
 
 ### Cloud browser

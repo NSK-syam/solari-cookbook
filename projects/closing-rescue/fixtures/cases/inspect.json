@@ -1,0 +1,48 @@
+{
+  "scenario": "inspect",
+  "address": "91 Marsh Road, Milton, DE 19968",
+  "location": {
+    "lat": 38.7776,
+    "lng": -75.3099,
+    "parcel_id": "DEMO-INSPECT-003",
+    "payload": {
+      "disposition": "resolved",
+      "resolved_address": "91 Marsh Road, Milton, DE 19968",
+      "lat": 38.7776,
+      "lng": -75.3099,
+      "confidence": 0.97,
+      "parcel": { "apn": "DEMO-INSPECT-003", "match_type": "fixture" }
+    }
+  },
+  "terrain": {
+    "soil_drainage_class": "poorly drained",
+    "slope_pct": 17.4,
+    "depth_to_bedrock_cm": 62
+  },
+  "flood_risk": {
+    "within_floodplain": true,
+    "fema_flood_zone": "AE"
+  },
+  "permit": {
+    "status": "success",
+    "parcel_id": "DEMO-INSPECT-003",
+    "candidate_count": 1,
+    "permits": [
+      {
+        "permitnumber": "DEMO-91-0038",
+        "taxparcelnumbers": "DEMO-INSPECT-003",
+        "appreceiveddate": "1991-02-12T00:00:00.000",
+        "permitstatus": "Completed",
+        "septicsystemtype": "Gravity"
+      }
+    ]
+  },
+  "precipitation": {
+    "station_id": "KGED",
+    "lookback_hours": 72,
+    "precipitation_mm": 42.7,
+    "measured_observations": 21,
+    "interpretation": "urgency_modifier_only"
+  },
+  "expected_disposition": "inspect"
+}
