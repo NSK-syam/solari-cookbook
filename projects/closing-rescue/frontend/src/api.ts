@@ -239,7 +239,10 @@ async function request<T>(url: string, init: RequestInit | undefined, parse: (pa
     const kind = classifyStatus(response.status);
     const detail = isObject(payload) && typeof payload.detail === "string" ? payload.detail : null;
     // Never reflect private server details from a 5xx response into the UI.
-    const message = kind === "server_error" ? "Closing Rescue is temporarily unavailable." : detail ?? `Request failed (${response.status}).`;
+    const publicSolariMessage = response.status === 503 && detail === "SOLARI_API_KEY is not configured"
+      ? "Live Solari is not enabled on this public demo. The complete fixture investigation remains available."
+      : null;
+    const message = publicSolariMessage ?? (kind === "server_error" ? "Closing Rescue is temporarily unavailable." : detail ?? `Request failed (${response.status}).`);
     throw new ApiError(kind, response.status, message);
   }
   return parse(payload);

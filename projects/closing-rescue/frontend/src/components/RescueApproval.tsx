@@ -24,5 +24,5 @@ export function RescueApproval({ scene, busy, tokenAvailable, canShowApproval, o
 }
 
 function FinalMemo({ scene }: { scene: ApprovalScene }) {
-  return <article className="final-memo"><p>CLOSING RESCUE · OUTCOME MEMO</p><h3>The window is protected.</h3><p>{scene.statusCopy}</p><dl><div><dt>Action</dt><dd>Simulated inspection booking</dd></div><div><dt>Control</dt><dd>Human approved · one-time token consumed</dd></div></dl><small>Every fact remains linked to its stored source and timestamp.</small></article>;
+  return <article className="final-memo"><p>CLOSING RESCUE · OUTCOME MEMO</p><h3>The window is protected.</h3><p>{scene.statusCopy}</p><dl><div><dt>Protected exposure</dt><dd>{scene.protectedExposure}</dd></div><div><dt>Action</dt><dd>Simulated inspection booking</dd></div><div><dt>Control</dt><dd>Human approved · one-time token consumed</dd></div></dl><small>Every fact remains linked to its stored source and timestamp.</small></article>;
 }

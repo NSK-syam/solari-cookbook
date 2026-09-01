@@ -8,6 +8,9 @@ import { workflowLifecycle } from "./workflow";
 
 const PORTFOLIO_KEY = "closing-rescue:portfolio";
 const IDEMPOTENCY_KEY = "closing-rescue:idempotency";
+const LIVE_SOLARI_ENABLED = import.meta.env.MODE !== "production" || import.meta.env.VITE_SOLARI_LIVE_AVAILABLE === "true";
+const STORY_SPEED = Number(import.meta.env.VITE_STORY_SPEED ?? "1");
+const STORY_DELAY_MS = Number.isFinite(STORY_SPEED) ? Math.max(0, 1800 * STORY_SPEED) : 1800;
 const initialStory: StorySnapshot = { visibleChapter: 1, persistedChapter: 1, paused: false, replaying: false, skipped: false, eventIds: [], visibleEventIds: [] };
 
 function tokenKey(approvalId: string): string { return `closing-rescue:approval:${approvalId}`; }
@@ -35,7 +38,7 @@ export default function App() {
   const replaceController = useCallback((snapshot: ClosingRescueView, startAtBeginning: boolean) => {
     controllerRef.current?.dispose();
     const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    const controller = new StoryController(snapshot.story_events, { startAtBeginning, delayMs: reduceMotion ? 0 : 1800 });
+    const controller = new StoryController(snapshot.story_events, { startAtBeginning, delayMs: reduceMotion ? 0 : STORY_DELAY_MS });
     controllerRef.current = controller;
     controller.subscribe(setStory);
   }, []);
@@ -160,6 +163,10 @@ export default function App() {
 
   const runSolari = async () => {
     if (!view) return;
+    if (!LIVE_SOLARI_ENABLED) {
+      setNotice("Live Solari is not enabled on this public demo. The complete fixture investigation remains available.");
+      return;
+    }
     setSolariBusy(true);
     setNotice(null);
     const poll = window.setInterval(() => {
@@ -201,6 +208,7 @@ export default function App() {
           }}
           solariExecution={solariExecution}
           solariBusy={solariBusy}
+          solariEnabled={LIVE_SOLARI_ENABLED}
           onRunSolari={() => void runSolari()}
         />
       )}

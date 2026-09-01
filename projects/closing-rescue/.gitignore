@@ -15,9 +15,12 @@ runtime-artifacts/
 .coverage
 *.tsbuildinfo
 frontend/.vite/
+frontend/playwright-report/
+frontend/test-results/
 frontend/vite.config.js
 frontend/vite.config.d.ts
 backend/src/*.egg-info/
 .closing-rescue-*.lock
 .superpowers/
 .worktrees/
+.vercel

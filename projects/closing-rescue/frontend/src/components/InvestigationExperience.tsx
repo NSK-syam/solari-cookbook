@@ -26,6 +26,7 @@ interface ReadyProps {
   playback: PlaybackActions;
   solariExecution?: SolariExecutionView | null;
   solariBusy?: boolean;
+  solariEnabled?: boolean;
   onRunSolari?: () => void;
   state?: never;
   message?: never;
@@ -60,7 +61,7 @@ const chapterLabels = [
 export function InvestigationExperience(props: InvestigationExperienceProps) {
   if (!props.cut) return <Boundary {...props} />;
 
-  const { cut, busy, tokenAvailable, onDecide, playback, solariExecution, solariBusy, onRunSolari } = props;
+  const { cut, busy, tokenAvailable, onDecide, playback, solariExecution, solariBusy, solariEnabled, onRunSolari } = props;
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   return (
@@ -119,7 +120,7 @@ export function InvestigationExperience(props: InvestigationExperienceProps) {
         </footer>
       </section>
 
-      <SolariExecutionRail execution={solariExecution ?? null} busy={solariBusy ?? false} onRun={onRunSolari ?? (() => undefined)} />
+      <SolariExecutionRail execution={solariExecution ?? null} busy={solariBusy ?? false} enabled={solariEnabled ?? true} onRun={onRunSolari ?? (() => undefined)} />
 
       {drawerOpen && <EvidenceDrawer items={cut.evidenceLedger} onClose={() => setDrawerOpen(false)} />}
     </main>

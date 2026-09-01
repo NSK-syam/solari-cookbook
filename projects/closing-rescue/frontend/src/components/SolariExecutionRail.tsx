@@ -6,9 +6,9 @@ const products = [
   { id: "desktop", label: "Desktop", copy: "Approval-gated form receipt" },
 ] as const;
 
-export function SolariExecutionRail({ execution, busy, onRun }: { execution: SolariExecutionView | null; busy: boolean; onRun: () => void }) {
+export function SolariExecutionRail({ execution, busy, enabled, onRun }: { execution: SolariExecutionView | null; busy: boolean; enabled: boolean; onRun: () => void }) {
   return <aside className="solari-rail" aria-label="Solari execution receipts">
-    <header><p>LIVE INFRASTRUCTURE</p><h2>Solari proof rail</h2><span>Three isolated products. One auditable rescue.</span></header>
+    <header><p>{enabled ? "LIVE INFRASTRUCTURE" : "SOLARI INTEGRATION"}</p><h2>Solari proof rail</h2><span>{enabled ? "Three isolated products. One auditable rescue." : "Live execution is disabled on this keyless public demo."}</span></header>
     <ol>{products.map((product) => {
       const step = execution?.steps.find((item) => item.product === product.id);
       const status = step?.status ?? (product.id === "desktop" ? "blocked" : "pending");
@@ -21,8 +21,8 @@ export function SolariExecutionRail({ execution, busy, onRun }: { execution: Sol
       </li>;
     })}</ol>
     <footer>
-      <button className="solari-run" onClick={onRun} disabled={busy || execution?.status === "running"}>{busy ? "Running on Solari…" : execution ? "Run proof again" : "Run live Solari proof"}</button>
-      <p>Desktop stays locked until the existing one-time human approval is consumed.</p>
+      <button className="solari-run" onClick={onRun} disabled={!enabled || busy || execution?.status === "running"}>{!enabled ? "Live Solari not configured" : busy ? "Running on Solari…" : execution ? "Run proof again" : "Run live Solari proof"}</button>
+      <p>{enabled ? "Desktop stays locked until the existing one-time human approval is consumed." : "The deterministic 47-loan investigation remains fully available without a billable cloud run."}</p>
     </footer>
   </aside>;
 }
