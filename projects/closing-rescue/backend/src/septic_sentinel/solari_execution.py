@@ -11,6 +11,7 @@ import ast
 import asyncio
 import json
 import re
+import struct
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -473,15 +474,25 @@ class LiveDesktopAdapter:
                     await asyncio.sleep(1)
                 else:
                     raise RuntimeError("desktop GUI did not become ready")
-                form_path = "/tmp/closing-rescue-inspection-request.txt"
-                await desktop.files.write(form_path, _desktop_form_text(form))
-                await desktop.open("mousepad", [form_path])
-                await asyncio.sleep(3)
-                # Add a visible computer-use mark in the rendered form.
-                await desktop.mouse.click(500, 278)
-                await desktop.keyboard.type(" [GUI VERIFIED]")
+                receipt_text = _desktop_form_text(form)
+                await desktop.open("mousepad")
+                await asyncio.sleep(4)
+                before = await desktop.screenshot(format="png")
+
+                # Mousepad opens in the top-left quadrant. Drive the form entirely
+                # through GUI input, then copy it back out through the GUI so a
+                # successful RPC cannot be mistaken for a populated receipt.
+                await desktop.mouse.click(320, 300, humanize=True)
+                await desktop.keyboard.type(receipt_text)
+                await desktop.keyboard.hotkey("ctrl", "a")
+                await desktop.keyboard.hotkey("ctrl", "c")
                 await asyncio.sleep(1)
-                screenshot = await desktop.screenshot()
+                _validate_desktop_text(receipt_text, await desktop.clipboard.get())
+                await desktop.keyboard.press("right")
+                await asyncio.sleep(1)
+
+                screenshot = await desktop.screenshot(format="png")
+                _validate_desktop_screenshot(before, screenshot)
                 digest, url = _write_artifact(
                     self.artifact_dir, "desktop-form-receipt", screenshot, "png"
                 )
@@ -594,12 +605,35 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
 def _desktop_form_text(form: dict[str, str]) -> str:
     fields = "\n".join(f"{key.replace('_', ' ').title()}: {value}" for key, value in form.items())
     return (
-        "CLOSING RESCUE - INSPECTION REQUEST PREVIEW\n"
+        "[GUI VERIFIED] CLOSING RESCUE - INSPECTION REQUEST PREVIEW\n"
         "SIMULATION ONLY - NOTHING WILL BE SUBMITTED\n\n"
         f"{fields}\n\n"
         "Approval Note: Approved simulation - no submission\n"
         "SUBMISSION DISABLED"
     )
+
+
+def _validate_desktop_text(expected: str, observed: str) -> None:
+    """Require the GUI editor to return the exact non-submittable form text."""
+
+    def normalize(value: str) -> str:
+        return value.replace("\r\n", "\n").strip()
+
+    if normalize(observed) != normalize(expected):
+        raise RuntimeError("desktop GUI did not contain the complete simulated form")
+
+
+def _validate_desktop_screenshot(before: bytes, after: bytes) -> None:
+    """Reject unchanged, malformed, or implausibly small desktop receipts."""
+    if before == after:
+        raise RuntimeError("desktop receipt did not change after GUI input")
+    if len(after) < 10_000 or not after.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise RuntimeError("desktop receipt is not a valid full-screen PNG")
+    if len(after) < 24 or after[12:16] != b"IHDR":
+        raise RuntimeError("desktop receipt is missing PNG dimensions")
+    width, height = struct.unpack(">II", after[16:24])
+    if width < 1_000 or height < 600:
+        raise RuntimeError("desktop receipt dimensions are too small to review")
 
 
 def _write_artifact(directory: Path, stem: str, data: bytes, extension: str) -> tuple[str, str]:

@@ -14,7 +14,10 @@ from septic_sentinel.runtime import build_closing_rescue_service
 from septic_sentinel.solari_execution import (
     AdapterResult,
     SolariExecutionService,
+    _desktop_form_text,
     _redact_permit_html,
+    _validate_desktop_screenshot,
+    _validate_desktop_text,
 )
 from septic_sentinel.solari_models import SolariArtifact, SolariStepReceipt
 
@@ -195,3 +198,51 @@ def test_solari_key_uses_standard_environment_name_without_serializing_secret(
     assert configured.solari_api_key is not None
     assert configured.solari_api_key.get_secret_value() == fake_key
     assert fake_key not in configured.model_dump_json()
+
+
+def test_desktop_form_is_explicitly_verified_and_non_submittable() -> None:
+    form = {
+        "mode": "SIMULATION ONLY - DO NOT SUBMIT",
+        "vendor": "First State Environmental",
+        "appointment": "Aug 6, 2026, 8:00 AM EDT",
+        "price": "$480",
+    }
+
+    receipt = _desktop_form_text(form)
+
+    assert receipt.startswith("[GUI VERIFIED] CLOSING RESCUE")
+    assert "SIMULATION ONLY - NOTHING WILL BE SUBMITTED" in receipt
+    assert "Vendor: First State Environmental" in receipt
+    assert receipt.endswith("SUBMISSION DISABLED")
+    _validate_desktop_text(receipt, receipt.replace("\n", "\r\n") + "\n")
+
+
+def test_desktop_text_validation_rejects_partial_or_wrong_gui_content() -> None:
+    expected = _desktop_form_text({"mode": "SIMULATION ONLY - DO NOT SUBMIT"})
+
+    with pytest.raises(RuntimeError, match="complete simulated form"):
+        _validate_desktop_text(expected, expected[:40])
+
+
+def _png(width: int = 1280, height: int = 720, marker: bytes = b"after") -> bytes:
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + b"\x00\x00\x00\rIHDR"
+        + width.to_bytes(4, "big")
+        + height.to_bytes(4, "big")
+        + marker * 2_500
+    )
+
+
+def test_desktop_screenshot_validation_requires_changed_full_screen_png() -> None:
+    before = _png(marker=b"before")
+    after = _png(marker=b"after")
+
+    _validate_desktop_screenshot(before, after)
+
+    with pytest.raises(RuntimeError, match="did not change"):
+        _validate_desktop_screenshot(after, after)
+    with pytest.raises(RuntimeError, match="valid full-screen PNG"):
+        _validate_desktop_screenshot(before, b"not-a-png")
+    with pytest.raises(RuntimeError, match="dimensions are too small"):
+        _validate_desktop_screenshot(before, _png(width=640, height=480))
