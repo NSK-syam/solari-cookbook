@@ -11,7 +11,11 @@ from pydantic import ValidationError
 
 from septic_sentinel.config import Settings
 from septic_sentinel.runtime import build_closing_rescue_service
-from septic_sentinel.solari_execution import AdapterResult, SolariExecutionService
+from septic_sentinel.solari_execution import (
+    AdapterResult,
+    SolariExecutionService,
+    _redact_permit_html,
+)
 from septic_sentinel.solari_models import SolariArtifact, SolariStepReceipt
 
 FIXTURE_ROOT = Path(__file__).resolve().parents[2] / "fixtures" / "cases"
@@ -162,6 +166,24 @@ def test_receipts_reject_credentials_cookies_and_owner_fields() -> None:
                 detail=leaked,
                 failure_reason="redacted",
             )
+
+
+def test_permit_html_redacts_ownership_fields_before_browser_recording() -> None:
+    source = """
+    <span id="FacilityNameLabel" class="h1">Parcel 123</span>
+    <span id="FacilityAddressLabel">1 Private Lane</span>
+    <div class="dataField"><span class="dataLabel">Permittee name as issued:</span>
+    <span class="dataValue">Private Owner</span></div>
+    <div class="dataField"><span class="dataLabel">Issued to:</span>
+    <span class="dataValue">Private Owner</span></div>
+    """
+
+    redacted = _redact_permit_html(source)
+
+    assert redacted.count("[redacted]") == 4
+    assert "Parcel 123" not in redacted
+    assert "1 Private Lane" not in redacted
+    assert "Private Owner" not in redacted
 
 
 def test_solari_key_uses_standard_environment_name_without_serializing_secret(

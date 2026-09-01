@@ -7,6 +7,7 @@ block, and return only redacted public receipts.
 
 from __future__ import annotations
 
+import ast
 import asyncio
 import json
 import re
@@ -270,9 +271,24 @@ class LiveSandboxAdapter:
                 if result.error:
                     raise RuntimeError("sandbox calculation returned an error")
                 values = [item.json for item in result.results if item.json is not None]
+                if not values:
+                    for item in reversed(result.results):
+                        if item.text:
+                            try:
+                                values.append(ast.literal_eval(item.text))
+                            except (SyntaxError, ValueError):
+                                continue
+                            break
                 if not values or not isinstance(values[-1], dict):
                     raise RuntimeError("sandbox calculation returned no manifest")
                 manifest = values[-1]
+                if (
+                    manifest.get("input_sha256") != payload["input_sha256"]
+                    or manifest.get("loan_count") != len(payload["loans"])
+                    or manifest.get("exit_status") != 0
+                    or manifest.get("flagged_count") != len(manifest.get("flagged_cases", []))
+                ):
+                    raise RuntimeError("sandbox calculation returned an invalid manifest")
                 canonical = json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
                 digest, url = _write_artifact(
                     self.artifact_dir, "sandbox-manifest", canonical, "json"
@@ -310,47 +326,74 @@ class LiveBrowserAdapter:
         self.timeout_ms = timeout_ms
 
     async def capture(self) -> AdapterResult:
+        from playwright.async_api import async_playwright
         from solari_browser import Solari
 
         record = await _discover_permit_record(self.timeout_ms / 1000)
         detail_url = record["url_for_permit_details"]
-        browser = None
+        session_id = None
         async with Solari(
             self.api_key, base_url=self.base_url, timeout_ms=self.timeout_ms
         ) as client:
             try:
-                browser = await client.launch(recording=True)
-                page = await browser.new_page()
+                session = await client.sessions.create(recording=True)
+                session_id = session.id
+                async with async_playwright() as playwright:
+                    browser = await playwright.chromium.connect_over_cdp(session.cdp_endpoint)
+                    try:
+                        context = (
+                            browser.contexts[0] if browser.contexts else await browser.new_context()
+                        )
+                        page = await context.new_page()
 
-                async def redact_owner_row(route: Any) -> None:
-                    response = await route.fetch()
-                    body = await response.text()
-                    redacted = re.sub(
-                        r"(?is)<tr\b[^>]*>.*?\bowner\b.*?</tr>",
-                        "<tr><td>[owner row redacted]</td></tr>",
-                        body,
-                    )
-                    await route.fulfill(response=response, body=redacted)
+                        async def redact_owner_row(route: Any) -> None:
+                            response = await route.fetch()
+                            body = await response.text()
+                            redacted = _redact_permit_html(body)
+                            await route.fulfill(response=response, body=redacted)
 
-                # Intercept before rendering so the recorded replay is redacted too.
-                await page.route(detail_url, redact_owner_row)
-                await page.goto(detail_url, wait_until="domcontentloaded", timeout=self.timeout_ms)
-                # Defense in depth for owner labels added later by client-side rendering.
-                await page.evaluate(
-                    """() => { for (const el of document.querySelectorAll('tr,label,dt,th')) {
-                      if (/owner/i.test(el.textContent || ''))
-                        (el.closest('tr') || el.parentElement || el).style.visibility = 'hidden';
-                    }}"""
-                )
-                screenshot = await page.screenshot(full_page=True)
-                digest, screenshot_url = _write_artifact(
-                    self.artifact_dir, "permit-record-redacted", screenshot, "png"
-                )
-                session_id = browser.id
+                        # Intercept before rendering so the replay is redacted too.
+                        await page.route(detail_url, redact_owner_row)
+                        await page.goto(
+                            detail_url,
+                            wait_until="domcontentloaded",
+                            timeout=self.timeout_ms,
+                        )
+                        # Defense in depth for labels added later by client rendering.
+                        await page.evaluate(
+                            """() => {
+                            const privateLabels =
+                              /owner|street address|permittee|issued to|project officer/i;
+                            const labels =
+                              document.querySelectorAll('.dataLabel,strong,tr,label,dt,th');
+                            for (const el of labels) {
+                              if (!privateLabels.test(el.textContent || '')) continue;
+                              const field = el.closest('.dataField');
+                              const value =
+                                field?.querySelector('.dataValue') || el.nextElementSibling;
+                              if (value) value.textContent = '[redacted]';
+                            }
+                            for (const id of ['FacilityNameLabel', 'FacilityAddressLabel']) {
+                              const value = document.getElementById(id);
+                              if (value) value.textContent = '[redacted]';
+                            }
+                            }"""
+                        )
+                        screenshot = await page.screenshot(full_page=True)
+                        digest, screenshot_url = _write_artifact(
+                            self.artifact_dir,
+                            "permit-record-redacted",
+                            screenshot,
+                            "png",
+                        )
+                    finally:
+                        await browser.close()
             finally:
-                if browser is not None:
-                    await browser.close()
-            replay = await client.sessions.get_replay_url(session_id)
+                if session_id is not None:
+                    await client.sessions.release_and_wait(session_id)
+            if session_id is None:
+                raise RuntimeError("browser session was not created")
+            replay = await _wait_for_replay(client.sessions, session_id)
         return AdapterResult(
             session_id=session_id,
             detail=(
@@ -371,6 +414,36 @@ class LiveBrowserAdapter:
         )
 
 
+async def _wait_for_replay(sessions: Any, session_id: str) -> Any:
+    """Wait for Solari's asynchronous recording finalization after release."""
+    for attempt in range(10):
+        try:
+            return await sessions.get_replay_url(session_id)
+        except Exception:
+            if attempt == 9:
+                raise
+            await asyncio.sleep(1)
+    raise RuntimeError("browser replay did not finalize")  # pragma: no cover
+
+
+def _redact_permit_html(body: str) -> str:
+    redacted = re.sub(
+        r'(?is)(<span\s+id="(?:FacilityNameLabel|FacilityAddressLabel)"[^>]*>).*?(</span>)',
+        r"\1[redacted]\2",
+        body,
+    )
+    private_labels = (
+        r"owner|street address|permittee(?: name as issued| contact)?|"
+        r"issued to|DNREC project officer"
+    )
+    return re.sub(
+        rf'(?is)(<span\s+class="dataLabel">(?:{private_labels}):?</span>\s*'
+        r'<span\s+class="dataValue">).*?(</span>)',
+        r"\1[redacted]\2",
+        redacted,
+    )
+
+
 class LiveDesktopAdapter:
     def __init__(self, api_key: str, base_url: str, artifact_dir: Path, timeout_ms: int) -> None:
         self.api_key = api_key
@@ -387,19 +460,27 @@ class LiveDesktopAdapter:
         ) as client:
             try:
                 desktop = await client.create(
-                    template="office",
+                    template="default",
                     resolution="1280x720",
                     timeout_ms=self.timeout_ms,
                     metadata={"project": "closing-rescue", "purpose": "approved-form-simulation"},
                 )
                 await desktop.connect()
-                html = _desktop_form_html(form)
-                await desktop.files.write("/tmp/closing-rescue-form.html", html)
-                await desktop.open("chrome", ["file:///tmp/closing-rescue-form.html"])
-                await asyncio.sleep(2)
-                # GUI typing proves computer-use without submitting or contacting a vendor.
-                await desktop.mouse.click(360, 570)
-                await desktop.keyboard.type("Approved simulation - no submission")
+                for _ in range(30):
+                    health = await desktop.health()
+                    if getattr(health, "ready", False):
+                        break
+                    await asyncio.sleep(1)
+                else:
+                    raise RuntimeError("desktop GUI did not become ready")
+                form_path = "/tmp/closing-rescue-inspection-request.txt"
+                await desktop.files.write(form_path, _desktop_form_text(form))
+                await desktop.open("mousepad", [form_path])
+                await asyncio.sleep(3)
+                # Add a visible computer-use mark in the rendered form.
+                await desktop.mouse.click(500, 278)
+                await desktop.keyboard.type(" [GUI VERIFIED]")
+                await asyncio.sleep(1)
                 screenshot = await desktop.screenshot()
                 digest, url = _write_artifact(
                     self.artifact_dir, "desktop-form-receipt", screenshot, "png"
@@ -478,8 +559,8 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
         "flagged = []",
         "for loan in payload['loans']:",
         "    consequence = loan['delay_consequence_cents']",
-        "    without = (consequence * loan['delay_probability_bps'] + 5000) // 10000",
-        "    residual = (consequence * loan['residual_probability_bps'] + 5000) // 10000",
+        "    without = consequence * loan['delay_probability_bps'] // 10000",
+        "    residual = consequence * loan['residual_probability_bps'] // 10000",
         "    after = without",
         "    if loan['intervention_available']:",
         "        after = residual + loan['intervention_cost_cents']",
@@ -503,37 +584,22 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
         "manifest['loan_count'] = len(payload['loans'])",
         "manifest['flagged_count'] = len(flagged)",
         "manifest['flagged_cases'] = flagged",
-        "manifest['formula'] = 'round_half_up(consequence*bps/10000)'",
+        "manifest['formula'] = 'floor(consequence*bps/10000)'",
         "manifest['exit_status'] = 0",
         "manifest",
     ]
     return "\n".join(lines)
 
 
-def _desktop_form_html(form: dict[str, str]) -> str:
-    import html
-
-    fields = "".join(
-        "<label>"
-        f"{html.escape(key.replace('_', ' ').title())}"
-        f"<input value='{html.escape(value)}' readonly></label>"
-        for key, value in form.items()
+def _desktop_form_text(form: dict[str, str]) -> str:
+    fields = "\n".join(f"{key.replace('_', ' ').title()}: {value}" for key, value in form.items())
+    return (
+        "CLOSING RESCUE - INSPECTION REQUEST PREVIEW\n"
+        "SIMULATION ONLY - NOTHING WILL BE SUBMITTED\n\n"
+        f"{fields}\n\n"
+        "Approval Note: Approved simulation - no submission\n"
+        "SUBMISSION DISABLED"
     )
-    return f"""<!doctype html>
-<meta charset='utf-8'>
-<style>
-body{{font:18px system-ui;background:#07130f;color:#eef7f1;padding:44px}}
-main{{max-width:800px;margin:auto}}
-label{{display:block;margin:14px 0;color:#9db5a7}}
-input,textarea{{display:block;width:100%;padding:12px;background:#10231b;
-color:white;border:1px solid #466a57}}
-.warning{{color:#ffc66d;font-weight:700}}
-button{{padding:14px;margin-top:12px}}
-</style>
-<main><p class='warning'>SIMULATION ONLY · THIS FORM CANNOT SUBMIT</p>
-<h1>Inspection request preview</h1>{fields}
-<label>Approval note<textarea autofocus></textarea></label>
-<button disabled>Submission disabled</button></main>"""
 
 
 def _write_artifact(directory: Path, stem: str, data: bytes, extension: str) -> tuple[str, str]:
