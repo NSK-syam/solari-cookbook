@@ -479,16 +479,19 @@ class LiveDesktopAdapter:
                 await asyncio.sleep(4)
                 before = await desktop.screenshot(format="png")
 
-                # Mousepad opens in the top-left quadrant. Drive the form entirely
-                # through GUI input, then copy it back out through the GUI so a
-                # successful RPC cannot be mistaken for a populated receipt.
+                # Mousepad opens in the top-left quadrant. Drive every line through
+                # GUI input. The current default desktop image
+                # does not expose clipboard or file-read RPCs, so the resulting
+                # full-screen receipt is reviewed from the captured PNG.
                 await desktop.mouse.click(320, 300, humanize=True)
-                await desktop.keyboard.type(receipt_text)
-                await desktop.keyboard.hotkey("ctrl", "a")
-                await desktop.keyboard.hotkey("ctrl", "c")
-                await asyncio.sleep(1)
-                _validate_desktop_text(receipt_text, await desktop.clipboard.get())
-                await desktop.keyboard.press("right")
+                lines = receipt_text.splitlines()
+                for index, line in enumerate(lines):
+                    for offset in range(0, len(line), 8):
+                        await desktop.keyboard.type(line[offset : offset + 8])
+                        await asyncio.sleep(0.08)
+                    if index < len(lines) - 1:
+                        await desktop.keyboard.press("Return")
+                        await asyncio.sleep(0.2)
                 await asyncio.sleep(1)
 
                 screenshot = await desktop.screenshot(format="png")

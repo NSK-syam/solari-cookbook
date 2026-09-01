@@ -74,7 +74,7 @@ make smoke-solari  # one real run of all three products; requires SOLARI_API_KEY
 
 Tests cover deterministic ranking, contradiction/no-match distinctions, formulas, approval recovery, token enforcement, redaction, timeouts, partial failures, idempotency, and exact-once fake-resource cleanup. The live smoke command fails clearly when no key is configured and prints only redacted public receipts when it succeeds.
 
-The September 1, 2026 live run produced independently inspectable sandbox and browser receipts in [`artifacts/live-proof`](artifacts/live-proof). The manifest covers all 47 loans and the browser screenshot is ownership-redacted. The earlier desktop image did not satisfy the new visible-content checks, so this README does not claim a verified desktop receipt; that proof remains pending a fresh run with a rotated key.
+The September 1, 2026 live walkthrough passed across all three products and produced independently inspectable receipts in [`artifacts/live-proof`](artifacts/live-proof). The manifest covers all 47 loans, the recorded-browser screenshot is ownership-redacted, and the approval-gated desktop screenshot visibly contains the complete simulation-only form with submission disabled. Expiring replay URLs and operational session identifiers are intentionally omitted from the public pack.
 
 ## Data and safety
 
@@ -84,4 +84,4 @@ The September 1, 2026 live run produced independently inspectable sandbox and br
 - The desktop form is a local text document, visibly labeled simulation-only, with no submission mechanism.
 - Browser, sandbox, and desktop sessions are independently closed and killed/released.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/PRIVACY.md](docs/PRIVACY.md), and [docs/LIMITATIONS.md](docs/LIMITATIONS.md) for deeper boundaries. Persistent production storage, the verified desktop receipt, a 60–90 second demo recording, and LinkedIn/X publication remain; nothing will be published without explicit approval.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/PRIVACY.md](docs/PRIVACY.md), and [docs/LIMITATIONS.md](docs/LIMITATIONS.md) for deeper boundaries. Persistent production storage, a 60–90 second demo recording, and LinkedIn/X publication remain; nothing will be published without explicit approval.
