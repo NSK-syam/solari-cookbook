@@ -9,4 +9,6 @@
 - The application is not a licensed inspection, diagnosis, appraisal, title opinion, or credit decision.
 - The MVP uses local SQLite and documents rather than automates its 30-day production retention target.
 - Solari replay URLs are signed and may expire; the session ID remains in the receipt so a reviewer can reconcile it in the Solari console.
-- The first local slice is not deployed. A public URL and social post follow only after `make smoke-solari` passes with a real key.
+- The fixture application is deployed at [closing-rescue.vercel.app](https://closing-rescue.vercel.app). Its SQLite database lives in ephemeral `/tmp` storage, so it is a reviewer demo rather than a durable production deployment.
+- Live Solari execution is disabled on the public deployment until persistent storage and a newly rotated key are configured. The committed proof pack contains sanitized sandbox and browser receipts; the hardened desktop receipt still requires a fresh live rerun.
+- No LinkedIn or X post has been published. Social publishing remains an explicit user-approved submission step.

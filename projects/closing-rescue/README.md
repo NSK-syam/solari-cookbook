@@ -23,6 +23,16 @@ Open [http://localhost:5173](http://localhost:5173), select **Start the rescue**
 
 Fixture mode is deterministic and contains no lender, borrower, vendor-customer, or real loan data. Without `SOLARI_API_KEY`, the complete product and test suite still run, while the explicit live-proof endpoint returns `503` instead of pretending a cloud run occurred.
 
+## Deploy to Vercel
+
+The fixture application is live at [closing-rescue.vercel.app](https://closing-rescue.vercel.app). The committed `vercel.json`, Python Function entrypoint, and root build package reproduce it:
+
+```bash
+vercel deploy .
+```
+
+Unconfigured previews use deterministic fixture mode and ephemeral `/tmp` SQLite storage. Their live-proof control is visibly disabled instead of producing a fake cloud receipt. After claiming a deployment, configure persistent storage before production use; set both a newly rotated `SOLARI_API_KEY` and `VITE_SOLARI_LIVE_AVAILABLE=true` only if reviewers should run billable live proofs. Never reuse a key exposed in chat or commit it to the repository.
+
 ## Reviewer walkthrough
 
 1. Start the 47-loan investigation and watch the six persisted chapters.
@@ -52,15 +62,19 @@ The Solari orchestration depends on three small adapter protocols. Ordinary CI u
 ## Verification
 
 ```bash
-make test          # 403 backend tests + 62 frontend tests
+make test          # 407 backend tests + 62 frontend tests
 make lint          # Ruff + TypeScript
 make build         # production Vite bundle
+make test-e2e      # Chromium desktop, Pixel 7, and reduced-motion journeys
+make secret-scan   # tracked-file live-secret patterns
+make audit         # Python and npm vulnerability audits
+make smoke-deploy  # built SPA + API liveness + database readiness
 make smoke-solari  # one real run of all three products; requires SOLARI_API_KEY
 ```
 
 Tests cover deterministic ranking, contradiction/no-match distinctions, formulas, approval recovery, token enforcement, redaction, timeouts, partial failures, idempotency, and exact-once fake-resource cleanup. The live smoke command fails clearly when no key is configured and prints only redacted public receipts when it succeeds.
 
-The real-key walkthrough passed on September 1, 2026: the sandbox verified all 47 loans and returned a hash-validated manifest; the recorded browser produced a replay and a visually inspected, ownership-redacted permit screenshot; and the approval-gated desktop produced a visually inspected simulation receipt. Session IDs and expiring replay URLs are intentionally not committed.
+The September 1, 2026 live run produced independently inspectable sandbox and browser receipts in [`artifacts/live-proof`](artifacts/live-proof). The manifest covers all 47 loans and the browser screenshot is ownership-redacted. The earlier desktop image did not satisfy the new visible-content checks, so this README does not claim a verified desktop receipt; that proof remains pending a fresh run with a rotated key.
 
 ## Data and safety
 
@@ -70,4 +84,4 @@ The real-key walkthrough passed on September 1, 2026: the sandbox verified all 4
 - The desktop form is a local text document, visibly labeled simulation-only, with no submission mechanism.
 - Browser, sandbox, and desktop sessions are independently closed and killed/released.
 
-See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/PRIVACY.md](docs/PRIVACY.md), and [docs/LIMITATIONS.md](docs/LIMITATIONS.md) for deeper boundaries. Deployment, the 60–90 second demo recording, and LinkedIn/X publication are the next submission slice; nothing will be published without explicit approval.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/PRIVACY.md](docs/PRIVACY.md), and [docs/LIMITATIONS.md](docs/LIMITATIONS.md) for deeper boundaries. Persistent production storage, the verified desktop receipt, a 60–90 second demo recording, and LinkedIn/X publication remain; nothing will be published without explicit approval.
