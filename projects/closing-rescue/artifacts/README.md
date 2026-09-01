@@ -1,5 +1,7 @@
 # Release rehearsal artifacts
 
+`closing-rescue-real-map.png` captures the current physical-evidence chapter with a real interactive OpenStreetMap basemap, visible attribution, and a clearly labeled synthetic approximate marker near Milton, Delaware.
+
 These files were captured from the automated three-case browser rehearsal:
 
 - `septic-sentinel-demo.webm` — complete clear, investigate, inspect, and approval flow

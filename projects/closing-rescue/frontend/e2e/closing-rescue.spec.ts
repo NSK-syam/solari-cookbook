@@ -19,6 +19,15 @@ test("runs, approves, reloads, and preserves the cinematic rescue", async ({ pag
   await page.getByRole("button", { name: "Start the rescue" }).click();
 
   await expect(page.getByText("47 active loans")).toBeVisible();
+  const realMap = page.getByRole("region", { name: /interactive real map/i });
+  await expect(realMap).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Pause story" }).click();
+  await expect(realMap).toHaveAttribute("data-map-status", "ready", { timeout: 15_000 });
+  await expect(realMap.getByText("MILTON, DELAWARE")).toBeVisible();
+  await expect(realMap.getByText(/synthetic demonstration.*exact parcel not displayed/i)).toBeVisible();
+  await expect(realMap.getByRole("link", { name: /OpenStreetMap contributors/i })).toBeVisible();
+  await page.getByRole("button", { name: "Resume story" }).click();
+
   await expect(page.getByText("Show assumptions and limitations")).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: "Pause story" }).click();
   await page.getByText("Show assumptions and limitations").click();

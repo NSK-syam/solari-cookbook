@@ -2,6 +2,8 @@
 
 Closing Rescue is a cinematic, local-first operations product that scans a deterministic 47-loan mortgage portfolio and finds the one septic-permit contradiction most likely to delay closing. It calculates the avoidable exposure, proposes a synthetic inspection slot, and stops at a durable one-time human approval before any GUI action.
 
+![Closing Rescue physical-evidence chapter with a real OpenStreetMap basemap](artifacts/closing-rescue-real-map.png)
+
 This is a real use of all three Solari products:
 
 - **Sandbox:** sends all 47 loans and their raw formula inputs to an isolated microVM. The guest independently checks every exposure calculation, preserves `contradiction` versus `no_match`, and returns a hash-addressed manifest with the input hash, flagged cases, formula version, and exit status.
@@ -62,7 +64,7 @@ The Solari orchestration depends on three small adapter protocols. Ordinary CI u
 ## Verification
 
 ```bash
-make test          # 407 backend tests + 62 frontend tests
+make test          # 407 backend tests + 63 frontend tests
 make lint          # Ruff + TypeScript
 make build         # production Vite bundle
 make test-e2e      # Chromium desktop, Pixel 7, and reduced-motion journeys
@@ -79,6 +81,7 @@ The September 1, 2026 live walkthrough passed across all three products and prod
 ## Data and safety
 
 - Ownership-adjacent fields are excluded from discovery and rewritten before both browser recording and screenshot capture.
+- The evidence chapter uses a real OpenStreetMap basemap, but its marker is fixed at a town-level synthetic demonstration point and is never geocoded from the case address.
 - API keys, cookies, browser endpoints, and owner fields are rejected from persisted receipt text.
 - Only hash-named JSON/image artifacts are served; paths are constrained to the configured artifact directory.
 - The desktop form is a local text document, visibly labeled simulation-only, with no submission mechanism.
