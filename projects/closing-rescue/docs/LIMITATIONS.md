@@ -1,6 +1,7 @@
 # Known limitations
 
-- Permit coverage is Delaware-only in the MVP, and record matching depends on parcel identifiers.
+- Permit coverage is Delaware-only in the MVP. The public checker accepts exact permit or parcel identifiers and chooses the newest application-received date when a parcel has multiple exact records.
+- Public-record dates describe application receipt, not installation or replacement. A difference is labeled for review and is not evidence of noncompliance or system failure.
 - Fixture addresses and evidence values are synthetic; they demonstrate workflow behavior rather than claims about real homes.
 - Live public APIs can be unavailable, delayed, incomplete, or spatially coarse.
 - NOAA station observations may have missing hourly precipitation values and are only an urgency modifier.
@@ -11,4 +12,5 @@
 - Solari replay URLs are signed and may expire; the session ID remains in the receipt so a reviewer can reconcile it in the Solari console.
 - The fixture application is deployed at [closing-rescue.vercel.app](https://closing-rescue.vercel.app). Its SQLite database lives in ephemeral `/tmp` storage, so it is a reviewer demo rather than a durable production deployment.
 - Live Solari execution is disabled on the public deployment until persistent storage and a server-side key are configured. The committed proof pack contains sanitized receipts from a successful sandbox, recorded-browser, and approval-gated desktop walkthrough.
+- The keyless public record checker performs a fresh Delaware API request, but its rate guard is per serverless instance rather than a globally distributed quota.
 - No LinkedIn or X post has been published. Social publishing remains an explicit user-approved submission step.

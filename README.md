@@ -11,7 +11,7 @@ past. Copy one into your project and change the parts you care about.
 
 | Project | Stack | What it shows |
 | --- | --- | --- |
-| [Closing Rescue](projects/closing-rescue) | FastAPI + React + SQLite | A 47-loan, approval-gated product using recorded browsers, isolated sandbox calculations, and a GUI desktop receipt |
+| [Closing Rescue](projects/closing-rescue) · [Live](https://closing-rescue.vercel.app) | FastAPI + React + SQLite | Fresh Delaware permit/parcel checks plus a 47-loan, approval-gated Solari browser, sandbox, and desktop showcase |
 
 ## Examples
 

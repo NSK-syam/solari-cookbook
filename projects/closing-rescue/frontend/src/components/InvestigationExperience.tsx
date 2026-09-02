@@ -44,6 +44,7 @@ interface BoundaryProps {
   message?: string;
   onRetry?: () => void;
   onStart?: () => void;
+  onStartLive?: () => void;
   retryLabel?: string;
 }
 
@@ -169,6 +170,7 @@ function Boundary({
   message,
   onRetry,
   onStart,
+  onStartLive,
   retryLabel,
 }: BoundaryProps) {
   if (state === "loading") {
@@ -196,7 +198,11 @@ function Boundary({
       <p>ONE AGENT · FORTY-SEVEN CLOSINGS</p>
       <h2>Find the delay a human team can still prevent.</h2>
       <span>The agent selects the case, gathers cited physical evidence, and stops for approval before it acts.</span>
-      <button className="primary" onClick={onStart}>Start the rescue</button>
+      <div className="mode-actions">
+        <button className="primary" onClick={onStartLive}>Check a real public record</button>
+        <button className="text-button" onClick={onStart}>Start the rescue · guided synthetic demo</button>
+      </div>
+      <small className="mode-disclosure">The guided demo intentionally repeats the same 47 synthetic loans. Live record check uses your input.</small>
     </main>
   );
 }

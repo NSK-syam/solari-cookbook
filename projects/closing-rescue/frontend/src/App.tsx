@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ApiError, apiClient, type ClosingRescueView, type SolariExecutionView } from "./api";
 import { InvestigationExperience } from "./components/InvestigationExperience";
+import { LiveRecordCheck } from "./components/LiveRecordCheck";
 import { projectInvestigation } from "./presentation";
 import { StoryController, type StorySnapshot } from "./story";
 import { SafeSessionStore } from "./session";
@@ -28,6 +29,7 @@ export default function App() {
   const [tokenAvailable, setTokenAvailable] = useState(false);
   const [solariExecution, setSolariExecution] = useState<SolariExecutionView | null>(null);
   const [solariBusy, setSolariBusy] = useState(false);
+  const [publicCheckOpen, setPublicCheckOpen] = useState(false);
   const controllerRef = useRef<StoryController | null>(null);
   const requestRef = useRef<{ id: number; controller: AbortController } | null>(null);
   const requestIdRef = useRef(0);
@@ -181,18 +183,24 @@ export default function App() {
     <div className="shell closing-rescue-shell">
       <header className="topbar">
         <div className="brand-lockup"><div><p className="eyebrow">Physical-world closing intelligence</p><h1>Closing Rescue</h1><span>Septic Sentinel · specialist agent</span></div></div>
+        <nav className="mode-nav" aria-label="Experience mode">
+          <button className={publicCheckOpen ? "active" : ""} onClick={() => setPublicCheckOpen(true)}>Live record check</button>
+          <button className={!publicCheckOpen && view ? "active" : ""} onClick={() => setPublicCheckOpen(false)}>Guided demo</button>
+        </nav>
       </header>
 
       {notice && view && <div className="notice" role="status">{notice}</div>}
       {storageWarning && <div className="notice storage-warning" role="status">{storageWarning}</div>}
 
-      {!view ? (
+      {publicCheckOpen ? (
+        <LiveRecordCheck onBack={() => setPublicCheckOpen(false)} />
+      ) : !view ? (
         busy ? (
           <InvestigationExperience state="loading" />
         ) : notice ? (
           <InvestigationExperience state="error" message={notice} onRetry={() => void startJourney()} retryLabel="Start the rescue" />
         ) : (
-          <InvestigationExperience state="empty" onStart={() => void startJourney()} />
+          <InvestigationExperience state="empty" onStart={() => void startJourney()} onStartLive={() => setPublicCheckOpen(true)} />
         )
       ) : (
         <InvestigationExperience

@@ -42,6 +42,13 @@ from septic_sentinel.models import (
 )
 from septic_sentinel.observability import configure_logging
 from septic_sentinel.priority import PriorityEngine
+from septic_sentinel.public_record_check import (
+    PublicLookupRateLimiter,
+    PublicRecordCheckRequest,
+    PublicRecordCheckResult,
+    PublicRecordUnavailableError,
+    check_public_record,
+)
 from septic_sentinel.repository import (
     CaseNotFoundError,
     RepositoryConflictError,
@@ -78,6 +85,7 @@ app.add_middleware(
 )
 
 logger = logging.getLogger("septic_sentinel.api")
+public_lookup_limiter = PublicLookupRateLimiter()
 
 
 @app.middleware("http")
@@ -280,6 +288,28 @@ async def readiness(response: Response) -> dict[str, str]:
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
         return {"status": "unavailable", "mode": settings.mode, "database": "unavailable"}
     return {"status": "ready", "mode": settings.mode, "database": "ok"}
+
+
+@app.post(
+    "/api/v2/closing-rescue/public-record-check",
+    response_model=PublicRecordCheckResult,
+)
+async def create_public_record_check(
+    request: Request,
+    payload: PublicRecordCheckRequest,
+) -> PublicRecordCheckResult:
+    """Run a fresh, owner-free lookup against Delaware's official public dataset."""
+    client_identity = request.client.host if request.client else "unknown"
+    if not public_lookup_limiter.allow(client_identity):
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many public record checks; try again in one minute",
+            headers={"Retry-After": "60"},
+        )
+    try:
+        return await check_public_record(payload)
+    except PublicRecordUnavailableError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @app.post(

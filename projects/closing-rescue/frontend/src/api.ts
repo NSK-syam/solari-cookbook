@@ -74,6 +74,20 @@ export interface SolariArtifact { kind: "manifest" | "citation" | "screenshot" |
 export interface SolariStepReceipt { product: "sandbox" | "browser" | "desktop"; status: SolariStepStatus; session_id: string | null; detail: string; started_at: string | null; completed_at: string | null; artifacts: SolariArtifact[]; failure_reason: string | null }
 export interface SolariExecutionView { portfolio_id: string; status: SolariExecutionStatus; steps: [SolariStepReceipt, SolariStepReceipt, SolariStepReceipt]; manifest_sha256: string | null; updated_at: string }
 
+export interface PublicRecordCheckInput {
+  identifier_type: "permit" | "parcel";
+  identifier: string;
+  claimed_year: number;
+  closing_date: string;
+  loan_amount_cents: number;
+  daily_delay_cost_cents: number;
+  expected_delay_days: number;
+  inspection_cost_cents: number;
+}
+export interface PublicPermitRecord { permit_number: string; parcel_reference: string; application_received_date: string | null; permit_status: string | null; system_type: string | null; construction_type: string | null; county: string | null; official_detail_url: string | null }
+export interface PublicExposureScenario { loan_amount_cents: number; daily_delay_cost_cents: number; expected_delay_days: number; inspection_cost_cents: number; without_action_cents: number; after_action_cents: number; preventable_cents: number; formula: string; truth_class: "user_supplied_scenario" }
+export interface PublicRecordCheckResult { query_type: "permit" | "parcel"; query_value: string; comparison: "aligned" | "needs_review" | "record_not_found"; summary: string; claimed_year: number; official_record_year: number | null; closing_date: string; days_to_close: number; matching_record_count: number; record: PublicPermitRecord | null; exposure: PublicExposureScenario; dataset_url: string; retrieved_at: string; limitation: string }
+
 export type ApiErrorKind = "validation" | "authentication" | "conflict" | "not_found" | "server_error" | "network" | "aborted";
 
 export class ApiError extends Error {
@@ -215,6 +229,20 @@ export function parseSolariExecution(payload: unknown): SolariExecutionView {
   return payload as SolariExecutionView;
 }
 
+export function parsePublicRecordCheck(payload: unknown): PublicRecordCheckResult {
+  const root = record(payload, ["query_type", "query_value", "comparison", "summary", "claimed_year", "official_record_year", "closing_date", "days_to_close", "matching_record_count", "record", "exposure", "dataset_url", "retrieved_at", "limitation"]);
+  oneOf(root.query_type, ["permit", "parcel"]); textValue(root.query_value); oneOf(root.comparison, ["aligned", "needs_review", "record_not_found"]); textValue(root.summary); integer(root.claimed_year, 1900, 2100); if (root.official_record_year !== null) integer(root.official_record_year, 1900, 2100); dateValue(root.closing_date); integer(root.days_to_close); integer(root.matching_record_count); timestamp(root.retrieved_at); textValue(root.limitation);
+  for (const key of ["dataset_url"] as const) { const parsed = new URL(textValue(root[key])); if (parsed.protocol !== "https:") invalid(); }
+  if (root.record !== null) {
+    const permit = record(root.record, ["permit_number", "parcel_reference", "application_received_date", "permit_status", "system_type", "construction_type", "county", "official_detail_url"]);
+    textValue(permit.permit_number); textValue(permit.parcel_reference); if (permit.application_received_date !== null) dateValue(permit.application_received_date); nullableText(permit.permit_status); nullableText(permit.system_type); nullableText(permit.construction_type); nullableText(permit.county);
+    if (permit.official_detail_url !== null) { const parsed = new URL(textValue(permit.official_detail_url)); if (parsed.protocol !== "https:" || parsed.hostname !== "den.dnrec.delaware.gov") invalid(); }
+  }
+  const exposure = record(root.exposure, ["loan_amount_cents", "daily_delay_cost_cents", "expected_delay_days", "inspection_cost_cents", "without_action_cents", "after_action_cents", "preventable_cents", "formula", "truth_class"]);
+  integer(exposure.loan_amount_cents); integer(exposure.daily_delay_cost_cents); integer(exposure.expected_delay_days, 1, 365); integer(exposure.inspection_cost_cents); integer(exposure.without_action_cents); integer(exposure.after_action_cents); integer(exposure.preventable_cents); textValue(exposure.formula); oneOf(exposure.truth_class, ["user_supplied_scenario"]);
+  return payload as PublicRecordCheckResult;
+}
+
 function classifyStatus(status: number): ApiErrorKind {
   if (status === 401 || status === 403) return "authentication";
   if (status === 404) return "not_found";
@@ -271,5 +299,6 @@ export const apiClient = {
   decideRescue: (portfolioId: string, payload: { approval_id: string; approver_identity: string; approval_token: string; approve: boolean; simulate_timeout?: boolean }, signal?: AbortSignal) =>
     request(`${api}/${encodeURIComponent(portfolioId)}/approve`, { method: "POST", body: JSON.stringify({ ...payload, simulate_timeout: payload.simulate_timeout ?? false }), signal }, parseClosingRescueView),
   runSolari: (portfolioId: string, signal?: AbortSignal) => request(`${api}/${encodeURIComponent(portfolioId)}/solari`, { method: "POST", signal }, parseSolariExecution),
-  getSolari: (portfolioId: string, signal?: AbortSignal) => request(`${api}/${encodeURIComponent(portfolioId)}/solari`, { signal }, parseSolariExecution)
+  getSolari: (portfolioId: string, signal?: AbortSignal) => request(`${api}/${encodeURIComponent(portfolioId)}/solari`, { signal }, parseSolariExecution),
+  checkPublicRecord: (payload: PublicRecordCheckInput, signal?: AbortSignal) => request(`${api}/public-record-check`, { method: "POST", body: JSON.stringify(payload), signal }, parsePublicRecordCheck)
 };

@@ -1,6 +1,6 @@
 # Closing Rescue on Solari
 
-Closing Rescue is a cinematic, local-first operations product that scans a deterministic 47-loan mortgage portfolio and finds the one septic-permit contradiction most likely to delay closing. It calculates the avoidable exposure, proposes a synthetic inspection slot, and stops at a durable one-time human approval before any GUI action.
+Closing Rescue combines a fresh public-record checker with a cinematic, deterministic 47-loan showcase. Reviewers can submit a Delaware permit or parcel identifier and their own closing assumptions for a new official-data query, or inspect the repeatable synthetic portfolio used to demonstrate Solari orchestration and approval safety.
 
 ![Closing Rescue physical-evidence chapter with a real OpenStreetMap basemap](artifacts/closing-rescue-real-map.png)
 
@@ -9,6 +9,13 @@ This is a real use of all three Solari products:
 - **Sandbox:** sends all 47 loans and their raw formula inputs to an isolated microVM. The guest independently checks every exposure calculation, preserves `contradiction` versus `no_match`, and returns a hash-addressed manifest with the input hash, flagged cases, formula version, and exit status.
 - **Browser:** discovers a current permit through the [Delaware Open Data API](https://data.delaware.gov/Energy-and-Environment/Permitted-Septic-Systems/mv7j-tx3u), follows the returned official DNREC detail URL in a recorded Solari browser, redacts parcel, address, owner, permittee, issued-to, officer, and contact fields before recording, and captures a screenshot, citation, session ID, and replay.
 - **Desktop:** remains locked until the existing approval token is consumed. It then opens a non-submittable local inspection-request form in a Solari desktop, adds a visible verification mark with GUI input, and captures a screenshot receipt. It never books or pays for anything.
+
+## Two explicit modes
+
+- **Live record check:** queries the official Delaware Open Data API on every submission. The reviewer supplies a permit/parcel identifier, claimed year, closing date, loan amount, daily delay cost, expected delay, and inspection estimate. Owner and address fields are never requested. The result distinguishes an aligned date, a difference requiring review, and no exact match; it never turns absence into a fabricated contradiction.
+- **Guided synthetic demo:** always replays the same 47 synthetic loans, selected case, vendor, and approval flow so reviewers can reproduce the Solari proof exactly. The UI labels this mode as deterministic instead of presenting repeated fixture values as fresh data.
+
+The public checker includes a per-instance rate guard and returns only allowlisted fields. Its money figures are visibly labeled user-supplied scenario math, not lender data or an appraisal.
 
 ## Run locally
 
@@ -21,7 +28,7 @@ make install
 make start
 ```
 
-Open [http://localhost:5173](http://localhost:5173), select **Start the rescue**, and use **Run live Solari proof** in the right rail. `make start` is the single command that launches FastAPI and the Vite app; both processes are cleaned up together on exit.
+Open [http://localhost:5173](http://localhost:5173). Select **Check a real public record** for a fresh Delaware query, or **Start the rescue · guided synthetic demo** and use **Run live Solari proof** in the right rail. `make start` is the single command that launches FastAPI and the Vite app; both processes are cleaned up together on exit.
 
 Fixture mode is deterministic and contains no lender, borrower, vendor-customer, or real loan data. Without `SOLARI_API_KEY`, the complete product and test suite still run, while the explicit live-proof endpoint returns `503` instead of pretending a cloud run occurred.
 
@@ -47,7 +54,9 @@ Unconfigured previews use deterministic fixture mode and ephemeral `/tmp` SQLite
 
 ```mermaid
 flowchart LR
-    UI["Cinematic React investigation"] --> API["Existing FastAPI /api/v2 workflow"]
+    L["Reviewer permit/parcel input"] --> Q["Fresh Delaware Open Data query"]
+    Q --> V["Allowlisted record + disclosed scenario math"]
+    UI["Guided React investigation"] --> API["Existing FastAPI /api/v2 workflow"]
     API --> DB["SQLite approvals, story, Solari receipts"]
     API --> S["Solari sandbox\n47-loan verification"]
     API --> B["Solari browser\nrecorded official permit"]
@@ -64,7 +73,7 @@ The Solari orchestration depends on three small adapter protocols. Ordinary CI u
 ## Verification
 
 ```bash
-make test          # 407 backend tests + 63 frontend tests
+make test          # 413 backend tests + 67 frontend tests (3 live-contract tests skipped without keys)
 make lint          # Ruff + TypeScript
 make build         # production Vite bundle
 make test-e2e      # Chromium desktop, Pixel 7, and reduced-motion journeys
@@ -74,7 +83,7 @@ make smoke-deploy  # built SPA + API liveness + database readiness
 make smoke-solari  # one real run of all three products; requires SOLARI_API_KEY
 ```
 
-Tests cover deterministic ranking, contradiction/no-match distinctions, formulas, approval recovery, token enforcement, redaction, timeouts, partial failures, idempotency, and exact-once fake-resource cleanup. The live smoke command fails clearly when no key is configured and prints only redacted public receipts when it succeeds.
+Tests cover live-record exact matching, newest-record selection, owner-field exclusion, rate windows, user-supplied formulas, deterministic ranking, contradiction/no-match distinctions, approval recovery, token enforcement, redaction, timeouts, partial failures, idempotency, and exact-once fake-resource cleanup. The live smoke command fails clearly when no key is configured and prints only redacted public receipts when it succeeds.
 
 The September 1, 2026 live walkthrough passed across all three products and produced independently inspectable receipts in [`artifacts/live-proof`](artifacts/live-proof). The manifest covers all 47 loans, the recorded-browser screenshot is ownership-redacted, and the approval-gated desktop screenshot visibly contains the complete simulation-only form with submission disabled. Expiring replay URLs and operational session identifiers are intentionally omitted from the public pack.
 
