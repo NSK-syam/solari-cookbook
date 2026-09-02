@@ -53,7 +53,7 @@ describe("Closing Rescue documentary controller", () => {
     fireEvent.click(screen.getByRole("button", { name: /start the rescue/i }));
     expect(await screen.findByText("47 active loans")).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent("one-time-secret");
-    expect(localStorage.length).toBe(0);
+    expect(window.localStorage.length).toBe(0);
     expect(Object.values(sessionStorage)).toContain("one-time-secret");
   });
 
